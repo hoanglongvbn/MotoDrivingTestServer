@@ -78,15 +78,6 @@ namespace THI_HANG_A1
         /// </summary>
         private void CapNhatDanhSachXeRanhUI()
         {
-            var xeRanh = examManager.GetXeRanh();
-            cboChonXe.DataSource = null;
-            cboChonXe.DataSource = xeRanh;
-            cboChonXe.DisplayMember = "MaXe";
-            cboChonXe.ValueMember = "MaXe";
-            if (xeRanh.Count == 0)
-            {
-                cboChonXe.Text = "Hết xe";
-            }
         }
 
         #region === LOG GIAO DIỆN ===
@@ -117,26 +108,6 @@ namespace THI_HANG_A1
         /// <summary>
         /// Giao xe cho thí sinh được chọn ở bảng CHUẨN BỊ THI
         /// </summary>
-        private void btnGiaoXe_Click(object sender, EventArgs e)
-        {
-            if (dgvchitietloi.SelectedRows.Count == 0)
-            {
-                MessageBox.Show("Vui lòng chọn một thí sinh từ bảng 'CHUẨN BỊ THI'.",
-                    "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            if (cboChonXe.SelectedItem == null)
-            {
-                MessageBox.Show("Đã hết xe rảnh hoặc bạn chưa chọn xe.",
-                    "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            var tsChuanBi = dgvchitietloi.SelectedRows[0].DataBoundItem as ThiSinh;
-            var xeDaChon = cboChonXe.SelectedItem as Xe;
-
-            examManager.GiaoXeChoThiSinh(tsChuanBi, xeDaChon);
-        }
 
         /// <summary>
         /// Bắt đầu lượt thi cho thí sinh đang chọn trong bảng ĐANG THI
@@ -301,7 +272,6 @@ namespace THI_HANG_A1
             if (e.RowIndex >= 0)
             {
                 // double click vào là giao xe luôn
-                btnGiaoXe_Click(sender, e);
             }
         }
 
@@ -383,8 +353,6 @@ namespace THI_HANG_A1
             //this.examineesTableAdapter.Fill(this.mCDV2A1DataSet.Examinees);
             LoadComboboxKySatHach();
             Loaf();                     // đọc từ SQL vào dgv + nạp vào ExamDataManager
-            groupBox1.BringToFront();
-            groupBox2.BringToFront();
             dgvThi.AutoGenerateColumns = true;
             dgvThi.DataSource = examManager.DanhSachDangThi;
             if (dgvThi.Columns["colThoiGian"] == null)
