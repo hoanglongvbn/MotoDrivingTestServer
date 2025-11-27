@@ -50,8 +50,8 @@ namespace THI_HANG_A1
             //dgvDangThi.DataSource = null;
             //dgvDangThi.Visible = false;
             GridThi();
-            dgvThi.AutoGenerateColumns=false;
-            dgvThi.DataSource =null;
+            dgvThi.AutoGenerateColumns = false;
+            dgvThi.DataSource = null;
             dgvThi.AllowUserToAddRows = false;// ✔ Không cho tự thêm dòng trống
 
             // 2. Khởi tạo các manager
@@ -269,7 +269,7 @@ namespace THI_HANG_A1
         }
 
         #endregion
-                                    
+
         #region === TIMER CẬP NHẬT THỜI GIAN ===
 
         // Khai báo duy nhất một hàm `timerCapNhatThoiGian_Tick`
@@ -1295,7 +1295,7 @@ namespace THI_HANG_A1
         // Lưu trạng thái theo số xe, ví dụ "1", "2", "10"...
         private Dictionary<string, TrangThaiXe> trangThaiXe
             = new Dictionary<string, TrangThaiXe>();
-        
+
         // mới thêm
         private void dgvThi_CurrentCellDirtyStateChanged(object sender, EventArgs e)
         {
