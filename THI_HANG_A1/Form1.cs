@@ -52,6 +52,7 @@ namespace THI_HANG_A1
             GridThi();
             dgvThi.AutoGenerateColumns=false;
             dgvThi.DataSource =null;
+            dgvThi.AllowUserToAddRows = false;// ✔ Không cho tự thêm dòng trống
 
             // 2. Khởi tạo các manager
             audioManager = new AudioManager();
@@ -67,6 +68,13 @@ namespace THI_HANG_A1
 
             KhoiTaoGiaoDienVaDuLieu();           // chỉ gọi 1 lần
             serialManager.KetNoiSerial("COM1", 115200); // THAY CỔNG COM NẾU CẦN
+
+            // mới sửa thêm
+            btnBatDau.Enabled = false;
+
+            dgvThi.CellValueChanged += dgvThi_CellValueChanged;
+            dgvThi.CurrentCellDirtyStateChanged += dgvThi_CurrentCellDirtyStateChanged;
+
         }
 
         /// <summary>
@@ -90,6 +98,7 @@ namespace THI_HANG_A1
         }
         /// <summary>
         /// Cập nhật ComboBox xe rảnh từ dữ liệu trong ExamManager
+        /// 
         /// </summary>
         private void CapNhatDanhSachXeRanhUI()
         {
@@ -129,9 +138,16 @@ namespace THI_HANG_A1
         /// </summary>
         private void btnBatDau_Click(object sender, EventArgs e)
         {
-            if (dgvThi.CurrentRow?.DataBoundItem is ThiSinh ts)
+            if (dgvThi.CurrentRow?.DataBoundItem is ThiSinhDangThi tsDangThi)
             {
-                examManager.BatDauLuotThi(ts);
+                if (!tsDangThi.DaKiemTraXe.GetValueOrDefault())
+                {
+                    MessageBox.Show("Vui lòng tích kiểm tra xe (ô ở cột đầu tiên) trước khi bắt đầu.",
+                                    "Chưa kiểm tra xe", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                //examManager.BatDauLuotThi(tsDangThi);
 
                 if (!timerCapNhatThoiGian.Enabled)
                     timerCapNhatThoiGian.Start();
@@ -253,7 +269,7 @@ namespace THI_HANG_A1
         }
 
         #endregion
-
+                                    
         #region === TIMER CẬP NHẬT THỜI GIAN ===
 
         // Khai báo duy nhất một hàm `timerCapNhatThoiGian_Tick`
@@ -924,7 +940,9 @@ namespace THI_HANG_A1
                 So8 = "CB",
                 DuongThang = "",
                 ZicZac = "",
-                GoGhe = ""
+                GoGhe = "",
+                DaKiemTraXe = null,       // ✔ trạng thái 1 – giống hình 2: mới cấp xe
+                TrangThai = "Đã cấp xe"
             };
 
             // Lúc mới cấp xe, ta vẫn để trạng thái XE là Rảnh
@@ -943,6 +961,17 @@ namespace THI_HANG_A1
         {
             dgvThi.Columns.Clear();
             dgvThi.AutoGenerateColumns = false;
+
+            // ===== CỘT TRẠNG THÁI XE (CheckBox 3 trạng thái) =====
+            var colTrangThai = new DataGridViewCheckBoxColumn()
+            {
+                Name = "colTrangThaiXe",
+                HeaderText = "",
+                Width = 35,
+                ThreeState = true,
+                DataPropertyName = "DaKiemTraXe"
+            };
+            dgvThi.Columns.Add(colTrangThai);
 
             // ===== CỘT XE =====
             dgvThi.Columns.Add(new DataGridViewTextBoxColumn()
@@ -1194,6 +1223,9 @@ namespace THI_HANG_A1
             // Cập nhật trạng thái thí sinh (nếu bạn có property)
             ts.TrangThai = "Chuẩn bị thi";
 
+            // ✔ Sau khi chọn Chuẩn bị -> hiện ô vuông rỗng (false)
+            ts.DaKiemTraXe = false;
+
             dgvThi.Refresh();
         }
 
@@ -1202,8 +1234,16 @@ namespace THI_HANG_A1
         {
             if (_currentRowIndex < 0) return;
 
-            var ts = dgvThi.Rows[_currentRowIndex].DataBoundItem as ThiSinhDangThi;
-            if (ts == null) return;
+            var data = dgvThi.Rows[_currentRowIndex].DataBoundItem as ThiSinhDangThi;
+            if (data == null) return;
+            var ts = data;
+
+            if (!ts.DaKiemTraXe.GetValueOrDefault())
+            {
+                MessageBox.Show("Vui lòng tích kiểm tra xe trước khi bắt đầu.",
+                                "Chưa kiểm tra xe", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
             // Cập nhật thời gian bắt đầu
             ts.GioBatDau = DateTime.Now;
@@ -1255,8 +1295,37 @@ namespace THI_HANG_A1
         // Lưu trạng thái theo số xe, ví dụ "1", "2", "10"...
         private Dictionary<string, TrangThaiXe> trangThaiXe
             = new Dictionary<string, TrangThaiXe>();
-
         
+        // mới thêm
+        private void dgvThi_CurrentCellDirtyStateChanged(object sender, EventArgs e)
+        {
+            // để khi click checkbox là value thay đổi ngay
+            if (dgvThi.IsCurrentCellDirty)
+                dgvThi.CommitEdit(DataGridViewDataErrorContexts.Commit);
+        }
+
+        private void dgvThi_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+
+            // chỉ xử lý cột trạng thái
+            if (dgvThi.Columns[e.ColumnIndex].Name != "colTrangThaiXe") return;
+
+            var data = dgvThi.Rows[_currentRowIndex].DataBoundItem as ThiSinhDangThi;
+            if (data == null) return;
+            var ts = data;
+
+
+            var cellValue = dgvThi.Rows[e.RowIndex].Cells[e.ColumnIndex].Value;
+            bool daCheck = cellValue != null && Convert.ToBoolean(cellValue);
+
+            ts.DaKiemTraXe = daCheck;
+
+            // nếu đang chọn đúng dòng này thì bật/tắt nút Bắt đầu
+            if (dgvThi.CurrentRow != null && dgvThi.CurrentRow.Index == e.RowIndex)
+                btnBatDau.Enabled = daCheck;
+        }
+
 
     }
 }
